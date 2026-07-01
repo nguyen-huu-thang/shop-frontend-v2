@@ -5,7 +5,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Search, ShoppingCart, Heart, User } from "lucide-react"
+import { Menu, Search, ShoppingCart, Heart, User, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,16 +26,32 @@ export function SiteHeader() {
   const { status, user, logout } = useAuth()
   const { count } = useCart()
   const [keywords, setKeywords] = useState("")
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault()
     const q = keywords.trim()
-    if (q) router.push(`/search?keywords=${encodeURIComponent(q)}`)
+    if (q) {
+      setMobileOpen(false)
+      router.push(`/search?keywords=${encodeURIComponent(q)}`)
+    }
   }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
+        {/* Nút mở menu (chỉ mobile) */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          aria-label="Mở menu"
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((v) => !v)}
+        >
+          {mobileOpen ? <X /> : <Menu />}
+        </Button>
+
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 text-lg font-bold">
           <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
@@ -110,6 +126,25 @@ export function SiteHeader() {
           )}
         </div>
       </div>
+
+      {/* Menu điều hướng cho mobile (mở bằng hamburger) */}
+      {/* Mobile nav menu (opened via hamburger) */}
+      {mobileOpen ? (
+        <nav className="border-t md:hidden">
+          <div className="mx-auto flex max-w-6xl flex-col px-4 py-2">
+            {nav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      ) : null}
     </header>
   )
 }

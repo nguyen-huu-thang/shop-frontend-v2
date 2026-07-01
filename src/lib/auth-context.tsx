@@ -109,8 +109,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     const token = tokenRef.current
     try {
+      // POST là chuẩn REST cho thao tác có side-effect (backend hỗ trợ cả POST lẫn GET).
+      // POST for a side-effecting action (backend supports both POST and GET).
       await fetch(api("/api/logout"), {
-        method: "GET",
+        method: "POST",
         credentials: "include",
         headers: token ? { authorization: `Bearer ${token}` } : undefined,
       })

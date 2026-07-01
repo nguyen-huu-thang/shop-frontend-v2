@@ -4,6 +4,7 @@
 // xem ảnh, gửi đánh giá. Cơ chế option: chọn đủ mỗi thuộc tính 1 giá trị → 1 SKU.
 // ⚠️ Chưa liệt kê được review theo sản phẩm (backend khoảng trống #7) - chỉ có form gửi.
 // Product detail (client): pick attributes → find option, add to cart/wishlist, gallery, review.
+import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
@@ -43,6 +44,7 @@ export function ProductDetail({ product }: { product: Product }) {
   const hasVariants = attributeNames.length > 0
 
   const [images, setImages] = useState<FileItem[]>([])
+  const [activeImg, setActiveImg] = useState(0)
   const [defaultOpt, setDefaultOpt] = useState<OptionDefault | null>(null)
   const [selected, setSelected] = useState<Record<string, string>>({})
   const [option, setOption] = useState<ProductOption | null>(null)
@@ -52,7 +54,12 @@ export function ProductDetail({ product }: { product: Product }) {
   // Tải ảnh + option mặc định.
   // Load images + default option.
   useEffect(() => {
-    getProductImages(product.id).then(setImages).catch(() => setImages([]))
+    getProductImages(product.id)
+      .then((imgs) => {
+        setImages(imgs)
+        setActiveImg(0)
+      })
+      .catch(() => setImages([]))
     getOptionDefault(product.id).then(setDefaultOpt).catch(() => setDefaultOpt(null))
   }, [product.id])
 
@@ -82,12 +89,23 @@ export function ProductDetail({ product }: { product: Product }) {
     }
   }, [allSelected, product.id, selected])
 
-  // Giá + tồn hiển thị.
-  // Displayed price + stock.
+  // Giá hiển thị: khi có phân loại nhưng CHƯA chọn đủ -> hiện giá thấp nhất (product.price,
+  // khớp với card ngoài trang chủ/danh sách); chọn đủ -> giá đúng option.
+  // Displayed price: before a full variant pick, show the lowest price (matches the card).
   const price = hasVariants
-    ? option?.price ?? null
+    ? option?.price ?? product.price
     : defaultOpt?.prices ?? product.price
   const stock = hasVariants ? option?.stock ?? null : defaultOpt?.stock ?? product.stock
+  // Đã chọn đủ phân loại chưa (để đánh dấu "giá từ" khi chưa chọn).
+  // Whether a full variant is selected (to show a "from" price otherwise).
+  const priceIsFrom = hasVariants && !option
+
+  // Giá sau giảm (khớp card + số tiền backend thực tính). null nếu chưa có giá.
+  // Discounted price (matches the card + the amount charged by backend).
+  const discount = product.discountPercentage ?? 0
+  const hasDiscount = discount > 0
+  const finalPrice =
+    price != null && hasDiscount ? price * (1 - discount / 100) : price
 
   // Option id để thêm giỏ/wishlist.
   // Option id for cart/wishlist.
@@ -97,9 +115,23 @@ export function ProductDetail({ product }: { product: Product }) {
     setSelected((prev) => ({ ...prev, [name]: value }))
   }, [])
 
+  // Hết hàng khi biết tồn kho và = 0.
+  // Out of stock when stock is known and zero.
+  const outOfStock = stock != null && stock <= 0
+  // Vượt tồn kho khi biết tồn và số lượng chọn lớn hơn.
+  const overStock = stock != null && quantity > stock
+
   const handleAddToCart = async () => {
     if (!optionId) {
       toast.error(hasVariants ? "Vui lòng chọn đủ phân loại" : "Sản phẩm chưa sẵn sàng")
+      return
+    }
+    if (outOfStock) {
+      toast.error("Sản phẩm đã hết hàng")
+      return
+    }
+    if (overStock) {
+      toast.error(`Chỉ còn ${stock} sản phẩm trong kho`)
       return
     }
     setBusy(true)
@@ -131,20 +163,22 @@ export function ProductDetail({ product }: { product: Product }) {
     }
   }
 
-  const mainImage = mediaUrl(images[0]?.file_path)
+  const mainImage = mediaUrl(images[activeImg]?.file_path ?? images[0]?.file_path)
 
   return (
     <>
     <div className="grid gap-8 md:grid-cols-2">
       {/* Ảnh */}
-      <div>
-        <div className="grid aspect-square place-items-center overflow-hidden rounded-xl border bg-muted">
+      <div className="md:sticky md:top-20 md:self-start">
+        <div className="relative grid aspect-square place-items-center overflow-hidden rounded-xl border bg-muted">
           {mainImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={mainImage}
               alt={product.name}
-              className="h-full w-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+              priority
             />
           ) : (
             <span className="text-sm text-muted-foreground">Chưa có ảnh</span>
@@ -152,14 +186,24 @@ export function ProductDetail({ product }: { product: Product }) {
         </div>
         {images.length > 1 ? (
           <div className="mt-3 flex gap-2 overflow-x-auto">
-            {images.map((f) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+            {images.map((f, i) => (
+              <button
                 key={f.id}
-                src={mediaUrl(f.file_path) ?? ""}
-                alt={f.description ?? product.name}
-                className="size-16 rounded-md border object-cover"
-              />
+                type="button"
+                onClick={() => setActiveImg(i)}
+                aria-label={`Ảnh ${i + 1}`}
+                className={`relative size-16 shrink-0 overflow-hidden rounded-md border transition-colors ${
+                  i === activeImg ? "border-primary ring-2 ring-primary/40" : "hover:border-primary/40"
+                }`}
+              >
+                <Image
+                  src={mediaUrl(f.file_path) ?? ""}
+                  alt={f.description ?? product.name}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              </button>
             ))}
           </div>
         ) : null}
@@ -176,15 +220,31 @@ export function ProductDetail({ product }: { product: Product }) {
           ) : null}
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold">{formatPrice(price)}</span>
-          {(product.discountPercentage ?? 0) > 0 ? (
-            <Badge variant="destructive">-{product.discountPercentage}%</Badge>
+        <div className="flex items-baseline gap-3">
+          {priceIsFrom ? (
+            <span className="text-sm text-muted-foreground">Từ</span>
+          ) : null}
+          <span className="text-2xl font-bold">{formatPrice(finalPrice)}</span>
+          {hasDiscount && price != null ? (
+            <span className="text-sm text-muted-foreground line-through">
+              {formatPrice(price)}
+            </span>
+          ) : null}
+          {hasDiscount ? (
+            <Badge variant="destructive">-{discount}%</Badge>
           ) : null}
         </div>
 
         {stock != null ? (
-          <p className="text-sm text-muted-foreground">Tồn kho: {stock}</p>
+          <div>
+            {stock <= 0 ? (
+              <Badge variant="destructive">Hết hàng</Badge>
+            ) : stock <= 5 ? (
+              <Badge variant="destructive">Sắp hết - còn {stock}</Badge>
+            ) : (
+              <Badge variant="secondary">Còn hàng ({stock})</Badge>
+            )}
+          </div>
         ) : null}
 
         {product.description ? (
@@ -225,16 +285,23 @@ export function ProductDetail({ product }: { product: Product }) {
             id="qty"
             type="number"
             min={1}
+            max={stock ?? undefined}
             aria-label="Số lượng"
             value={quantity}
-            onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-            className="h-8 w-20 rounded-md border bg-transparent px-2 text-sm"
+            onChange={(e) => {
+              // Kẹp trong [1, tồn kho] nếu biết tồn kho.
+              // Clamp to [1, stock] when stock is known.
+              const n = Math.max(1, Number(e.target.value) || 1)
+              setQuantity(stock != null && stock > 0 ? Math.min(n, stock) : n)
+            }}
+            disabled={outOfStock}
+            className="h-8 w-20 rounded-md border bg-transparent px-2 text-sm disabled:opacity-50"
           />
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button onClick={handleAddToCart} disabled={busy}>
-            Thêm vào giỏ
+          <Button onClick={handleAddToCart} disabled={busy || outOfStock || overStock}>
+            {outOfStock ? "Hết hàng" : "Thêm vào giỏ"}
           </Button>
           <Button variant="outline" onClick={handleAddWishlist} disabled={busy}>
             Yêu thích

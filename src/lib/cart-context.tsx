@@ -43,9 +43,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const data = await authFetch<CartItem[]>("/api/cart")
       setItems(Array.isArray(data) ? data : [])
     } catch {
-      // Lỗi (vd chưa đăng nhập) → coi như giỏ rỗng, không chặn UI.
-      // On error treat as empty cart.
-      setItems([])
+      // Lỗi tạm thời (mạng/server) → GIỮ item hiện có để không làm người dùng tưởng mất hàng.
+      // Trạng thái đăng xuất đã được xử lý riêng ở effect bên dưới (đặt giỏ rỗng).
+      // Transient error → keep existing items; logout is handled separately below.
     } finally {
       setLoading(false)
     }

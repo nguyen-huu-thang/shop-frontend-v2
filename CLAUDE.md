@@ -22,8 +22,32 @@ cũ. Đây là điểm vào ngữ cảnh - đọc trước khi code.
   - **Gợi ý/cá nhân hóa:** widget thịnh hành / gợi ý cho bạn / đã xem gần đây (trang chủ) + hay mua
     cùng (trang chi tiết).
   - **Admin:** sản phẩm dùng `/products/managed`; coupon đủ field nâng cấp; đổi trạng thái giao đơn.
-- ⏭️ **Tiếp theo:** editor thuộc tính/biến thể (SKU) sản phẩm; tinh chỉnh UI (skeleton/empty,
-  next/image). Phần còn chờ backend: **ảnh trong product DTO** (card vẫn placeholder).
+- ✅ **Phần 5 (đồng bộ đợt rà soát backend 2026-07-01) xong:** `tsc` sạch + `next build` OK (28 route).
+  Đã nối các thay đổi backend từ đợt vá lỗi/hardening:
+  - **Đơn online giữ chỗ tồn kho (Shopee-like):** `Order` type + `/orders/[id]` dùng
+    `paymentProvider` để gate nút "Thanh toán ngay", hiện **hạn thanh toán** (`paymentDeadline`) và
+    trạng thái **đã hủy quá hạn** (`cancelledAt`, ẩn nút trả). Cần backend mở rộng `OrderResponse`
+    (thêm `paymentProvider/paymentDeadline/cancelledAt`).
+  - **Đổi mật khẩu:** thêm ô tích "Đăng xuất tất cả phiên khác (giữ phiên hiện tại)" trong
+    `/account` → gửi `logoutOtherSessions`.
+  - **Logout dùng POST** (`auth-context`) - backend hỗ trợ cả POST lẫn GET.
+  - Login/forgot/OTP: 429 rate-limit hiển thị `message` từ backend (không cần đổi); login unknown
+    user nay trả E1005 chung (FE không special-case E1004 nên không ảnh hưởng).
+  - Chi tiết: [`.claude/docs/dong-bo-backend-2026-07-01.md`](.claude/docs/dong-bo-backend-2026-07-01.md).
+- ✅ **Phần 6 (rà soát + nâng cấp frontend 2026-07-01) xong:** `tsc` sạch + `next build` OK (28 route).
+  Kế hoạch + phân công đầy đủ: [`.claude/docs/ra-soat-frontend-2026-07-01.md`](.claude/docs/ra-soat-frontend-2026-07-01.md).
+  - **Lỗi đã sửa:** decode JWT UTF-8 (hết hỏng tên/email có dấu); nhãn tiếng Việt + badge trạng thái
+    tổng hợp + nút trả nhanh + đếm ngược ở danh sách đơn (`lib/order-status.ts` dùng chung); returnUrl
+    khi đăng nhập; chặn số lượng theo tồn kho + badge tồn kho; coupon có `busy` + bỏ áp mềm khi hết
+    hợp lệ; cart-context giữ item khi refresh lỗi; chỉ nhận `n.link` là path nội bộ.
+  - **Giao diện:** `next/image` (hết `<img>`), gallery thumbnail chọn được + sticky cột ảnh,
+    skeleton + empty state (cart/wishlist/search/orders), timeline đơn + đồng hồ đếm ngược hạn thanh
+    toán, header mobile hamburger, dialog xác nhận hành động phá hủy.
+  - **File mới:** `lib/order-status.ts`, `components/site/payment-countdown.tsx`,
+    `components/site/order-timeline.tsx`, `components/ui/confirm-dialog.tsx`.
+  - **Chờ user/backend:** nghi giá lệch card vs chi tiết (#5, cần xác nhận dữ liệu thật), hủy đơn
+    chủ động + thông báo realtime (cần endpoint backend), QA thủ công + Lighthouse/A11y.
+- ⏭️ **Tiếp theo:** editor thuộc tính/biến thể (SKU) sản phẩm. Phần còn chờ backend đã nêu ở Phần 6.
 - Dọn dẹp: `src/components/auth/auth-demo.tsx` là widget thử Phần 1, không còn dùng - có thể xóa.
 - Để chạy thử: bật backend cổng 8088 rồi `npm run dev` (xem `.env.local`). Tài khoản: `admin`/`Admin@123`,
   demo `Demo@123`. Coupon demo: `WELCOME10`/`SALE50K`/`FREESHIP`/`BIGSALE20`.

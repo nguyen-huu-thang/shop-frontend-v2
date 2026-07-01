@@ -17,7 +17,11 @@ export function decodeJwt(token: string): JwtUser | null {
     if (!payload) return null
     // base64url → base64
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/")
-    const json = atob(base64)
+    // atob trả chuỗi latin1; phải giải lại UTF-8 để không hỏng tiếng Việt (username/email có dấu).
+    // atob yields a latin1 string; re-decode as UTF-8 so Vietnamese chars survive.
+    const binary = atob(base64)
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+    const json = new TextDecoder("utf-8").decode(bytes)
     const data = JSON.parse(json) as JwtUser
     return data
   } catch {

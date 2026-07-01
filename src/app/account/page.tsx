@@ -3,6 +3,7 @@
 // Tài khoản (cần đăng nhập): thông tin user (từ JWT), lịch sử đơn hàng, đổi mật khẩu.
 // ⚠️ Sửa hồ sơ/địa chỉ chờ backend (khoảng trống #2) - chỉ hiển thị thông tin từ JWT.
 // Account page (login required): user info (from JWT), orders, change password.
+import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -10,9 +11,11 @@ import { Container } from "@/components/site/public-shell"
 import { AddressManager } from "@/components/account/address-manager"
 import { EmailSecuritySection } from "@/components/account/email-security"
 import { RequireAuth } from "@/components/auth/require-auth"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Separator } from "@/components/ui/separator"
 import {
   Card,
@@ -25,7 +28,24 @@ import { getMe, updateProfile } from "@/lib/api/user-api"
 import { ApiError } from "@/lib/api-error"
 import { useAuth } from "@/lib/auth-context"
 import { formatPrice } from "@/lib/format"
+import {
+  orderDisplayStatus,
+  ORDER_STATUS_LABEL,
+  paymentLabel,
+  shippingLabel,
+} from "@/lib/order-status"
 import type { Order, UserInfo } from "@/lib/types"
+
+// Màu badge theo trạng thái tổng hợp của đơn.
+const STATUS_VARIANT: Record<
+  ReturnType<typeof orderDisplayStatus>,
+  "secondary" | "outline" | "destructive"
+> = {
+  paid: "secondary",
+  awaiting_payment: "outline",
+  cod_unpaid: "outline",
+  cancelled: "destructive",
+}
 
 function OrdersSection() {
   const { authFetch } = useAuth()
@@ -53,38 +73,45 @@ function OrdersSection() {
         <p className="text-sm text-muted-foreground">Bạn chưa có đơn hàng nào.</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {orders.map((o) => (
-            <Card key={o.id} size="sm">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Đơn #{o.id}</span>
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {formatPrice(o.totalAmount)}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm">
-                <p className="text-muted-foreground">Địa chỉ: {o.address}</p>
-                <p className="text-muted-foreground">
-                  Thanh toán: {o.paymentMethod} -{" "}
-                  {o.paymentStatus ? "Đã thanh toán" : "Chưa thanh toán"}
-                </p>
-                <p className="text-muted-foreground">
-                  Giao hàng: {o.shippingStatus}
-                </p>
-                <ul className="mt-2 space-y-1">
-                  {o.details.map((d) => (
-                    <li key={d.id} className="flex justify-between">
-                      <span>
-                        {d.name} x {d.quantity}
-                      </span>
-                      <span>{formatPrice(d.price)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          ))}
+          {orders.map((o) => {
+            const status = orderDisplayStatus(o)
+            return (
+              <Card key={o.id} size="sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <Link href={`/orders/${o.id}`} className="hover:text-primary">
+                      Đơn #{o.id}
+                    </Link>
+                    <span className="text-sm font-normal text-muted-foreground">
+                      {formatPrice(o.totalAmount)}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <Badge variant={STATUS_VARIANT[status]}>{ORDER_STATUS_LABEL[status]}</Badge>
+                    <span className="text-muted-foreground">
+                      {paymentLabel(o.paymentMethod)}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground">Địa chỉ: {o.address}</p>
+                  <p className="text-muted-foreground">
+                    Giao hàng: {shippingLabel(o.shippingStatus)}
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {o.details.map((d) => (
+                      <li key={d.id} className="flex justify-between">
+                        <span>
+                          {d.name} x {d.quantity}
+                        </span>
+                        <span>{formatPrice(d.price)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </section>
@@ -176,14 +203,19 @@ function ChangePasswordSection() {
   const { authFetch } = useAuth()
   const [current, setCurrent] = useState("")
   const [next, setNext] = useState("")
+  const [logoutOthers, setLogoutOthers] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setBusy(true)
     try {
-      await changePassword(authFetch, current, next)
-      toast.success("Đổi mật khẩu thành công")
+      await changePassword(authFetch, current, next, logoutOthers)
+      toast.success(
+        logoutOthers
+          ? "Đổi mật khẩu thành công. Đã đăng xuất các phiên khác."
+          : "Đổi mật khẩu thành công"
+      )
       setCurrent("")
       setNext("")
     } catch (err) {
@@ -199,9 +231,8 @@ function ChangePasswordSection() {
       <form onSubmit={submit} className="flex max-w-sm flex-col gap-3">
         <div className="grid gap-1.5">
           <Label htmlFor="current">Mật khẩu hiện tại</Label>
-          <Input
+          <PasswordInput
             id="current"
-            type="password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
             autoComplete="current-password"
@@ -210,15 +241,23 @@ function ChangePasswordSection() {
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="next">Mật khẩu mới</Label>
-          <Input
+          <PasswordInput
             id="next"
-            type="password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
             autoComplete="new-password"
             required
           />
         </div>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            className="size-4 accent-primary"
+            checked={logoutOthers}
+            onChange={(e) => setLogoutOthers(e.target.checked)}
+          />
+          Đăng xuất tất cả phiên khác (giữ phiên hiện tại)
+        </label>
         <Button type="submit" disabled={busy} className="w-fit">
           Cập nhật mật khẩu
         </Button>

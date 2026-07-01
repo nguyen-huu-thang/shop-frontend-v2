@@ -10,6 +10,7 @@ import { ProductCard } from "@/components/site/product-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import { searchProducts } from "@/lib/api/catalog"
 import type { ProductSearchResult } from "@/lib/types"
 
@@ -119,7 +120,11 @@ export function SearchClient() {
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Đang tìm...</p>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />
+          ))}
+        </div>
       ) : error ? (
         <p className="text-sm text-destructive">Lỗi: {error}</p>
       ) : data && data.results.length > 0 ? (

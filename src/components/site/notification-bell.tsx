@@ -17,6 +17,14 @@ import { useAuth } from "@/lib/auth-context"
 import { formatDateTime } from "@/lib/format"
 import type { Notification } from "@/lib/types"
 
+// Chỉ chấp nhận link nội bộ (bắt đầu "/" nhưng không "//") để tránh open-redirect / javascript:.
+// Link do admin broadcast nhập nên phải kiểm.
+// Only allow internal paths (start with "/" but not "//") to avoid open-redirect / javascript:.
+function safeInternalLink(link?: string | null): string | null {
+  if (!link) return null
+  return link.startsWith("/") && !link.startsWith("//") ? link : null
+}
+
 export function NotificationBell() {
   const { authFetch } = useAuth()
   const [open, setOpen] = useState(false)
@@ -104,7 +112,11 @@ export function NotificationBell() {
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-sm font-medium">Thông báo</span>
             {unread > 0 ? (
-              <button className="text-xs text-primary hover:underline" onClick={readAll}>
+              <button
+                type="button"
+                className="text-xs text-primary hover:underline"
+                onClick={readAll}
+              >
                 Đọc tất cả
               </button>
             ) : null}
@@ -131,10 +143,11 @@ export function NotificationBell() {
                     </p>
                   </div>
                 )
-                return n.link ? (
+                const href = safeInternalLink(n.link)
+                return href ? (
                   <Link
                     key={n.id}
-                    href={n.link}
+                    href={href}
                     onClick={() => {
                       onItemClick(n)
                       setOpen(false)
@@ -146,6 +159,7 @@ export function NotificationBell() {
                 ) : (
                   <button
                     key={n.id}
+                    type="button"
                     onClick={() => onItemClick(n)}
                     className="block w-full text-left hover:bg-accent/60"
                   >

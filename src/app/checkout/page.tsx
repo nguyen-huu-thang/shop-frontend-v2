@@ -40,8 +40,12 @@ function CheckoutContent() {
   const [provider, setProvider] = useState<PaymentProvider>("cod")
   const [preview, setPreview] = useState<OrderPreview | null>(null)
   const [busy, setBusy] = useState(false)
+  const [couponBusy, setCouponBusy] = useState(false)
 
   const cartIds = items.map((it) => it.id)
+  // Khóa ổn định theo nội dung giỏ để effect preview chạy lại khi item đổi (không chỉ số lượng phần tử).
+  // Stable key over cart contents so the preview effect reruns on item changes, not just count.
+  const cartKey = cartIds.join(",")
 
   // Tải sổ địa chỉ; tự chọn địa chỉ mặc định nếu có.
   const loadAddresses = useCallback(() => {
@@ -74,7 +78,15 @@ function CheckoutContent() {
       couponCode: appliedCoupon,
     })
       .then((p) => {
-        if (active) setPreview(p)
+        if (!active) return
+        // Coupon đang áp bỗng hết hợp lệ (đổi địa chỉ/số lượng làm dưới ngưỡng min_order...):
+        // bỏ áp mã, tính lại không mã thay vì để trống bảng tổng.
+        // Applied coupon became invalid: drop it and recompute without it.
+        if (appliedCoupon && !p.couponApplied) {
+          setAppliedCoupon(undefined)
+          toast.message("Mã giảm giá không còn áp dụng được cho đơn này")
+        }
+        setPreview(p)
       })
       .catch(() => {
         if (active) setPreview(null)
@@ -82,8 +94,9 @@ function CheckoutContent() {
     return () => {
       active = false
     }
+    // cartKey đại diện nội dung giỏ; cartIds/items chủ ý không đưa vào deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authFetch, selectedId, appliedCoupon, items.length])
+  }, [authFetch, selectedId, appliedCoupon, cartKey])
 
   const applyCoupon = () => {
     const code = couponInput.trim()
@@ -91,6 +104,8 @@ function CheckoutContent() {
       setAppliedCoupon(undefined)
       return
     }
+    if (couponBusy) return
+    setCouponBusy(true)
     // Thử preview với mã; nếu lỗi (mã không hợp lệ) thì báo và bỏ áp.
     previewOrder(authFetch, { cartIds, addressId: selectedId ?? undefined, couponCode: code })
       .then((p) => {
@@ -105,6 +120,7 @@ function CheckoutContent() {
       .catch((err) =>
         toast.error(err instanceof ApiError ? err.message : "Mã giảm giá không hợp lệ")
       )
+      .finally(() => setCouponBusy(false))
   }
 
   const handleAddAddress = async (payload: AddressPayload) => {
@@ -266,8 +282,13 @@ function CheckoutContent() {
                     placeholder="VD: WELCOME10"
                   />
                 </div>
-                <Button type="button" variant="outline" onClick={applyCoupon}>
-                  Áp dụng
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={applyCoupon}
+                  disabled={couponBusy}
+                >
+                  {couponBusy ? "Đang áp..." : "Áp dụng"}
                 </Button>
               </div>
               {appliedCoupon ? (

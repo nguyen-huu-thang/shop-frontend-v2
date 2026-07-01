@@ -43,15 +43,22 @@ export const createOrder = (authFetch: AuthFetch, payload: OrderCreatePayload) =
 export const payOrder = (authFetch: AuthFetch, orderId: number | string) =>
   authFetch<PaymentInit>(`/api/orders/${orderId}/pay`, { method: "POST" })
 
+// Chủ đơn tự hủy đơn online chưa thanh toán -> backend hoàn kho + nhả coupon. Trả đơn đã cập nhật.
+// Owner cancels an unpaid online order -> backend restocks + releases coupon.
+export const cancelOrder = (authFetch: AuthFetch, orderId: number | string) =>
+  authFetch<Order>(`/api/orders/${orderId}/cancel`, { method: "POST" })
+
 // ── Mật khẩu ─────────────────────────────────────────────────────────────────
+// logoutOtherSessions=true: đăng xuất mọi phiên KHÁC (giữ phiên hiện tại).
 export const changePassword = (
   authFetch: AuthFetch,
   currentPassword: string,
-  newPassword: string
+  newPassword: string,
+  logoutOtherSessions = false
 ) =>
   authFetch<MessageResponse>("/api/change-password", {
     method: "POST",
-    body: JSON.stringify({ currentPassword, newPassword }),
+    body: JSON.stringify({ currentPassword, newPassword, logoutOtherSessions }),
   })
 
 export const verifyPassword = (authFetch: AuthFetch, password: string) =>

@@ -4,7 +4,7 @@
 // Dùng cho các trang cần đăng nhập (tài khoản, store manager...).
 // Client guard: blocks content when unauthenticated and redirects to /login.
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 import { useAuth } from "@/lib/auth-context"
 
@@ -17,12 +17,20 @@ export function RequireAuth({
 }) {
   const { status } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace(redirectTo)
+      // Giữ trang đích (kèm query) để đăng nhập xong quay lại đúng chỗ.
+      // Đọc query bằng window để khỏi cần Suspense boundary như useSearchParams.
+      // Keep the target (with query) so login can return here; read query via window
+      // to avoid the Suspense requirement of useSearchParams.
+      const query = typeof window !== "undefined" ? window.location.search : ""
+      const returnUrl = `${pathname}${query}`
+      const sep = redirectTo.includes("?") ? "&" : "?"
+      router.replace(`${redirectTo}${sep}returnUrl=${encodeURIComponent(returnUrl)}`)
     }
-  }, [status, router, redirectTo])
+  }, [status, router, redirectTo, pathname])
 
   if (status !== "authenticated") {
     // Đang khôi phục phiên hoặc chưa đăng nhập → không render nội dung bảo vệ.

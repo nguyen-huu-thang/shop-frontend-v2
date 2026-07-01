@@ -114,8 +114,14 @@ export interface Order {
   address: string
   totalAmount: number
   paymentMethod: string
+  // Nhà cung cấp thanh toán ('cod' | 'mock_online') - quyết định nút "Thanh toán ngay".
+  paymentProvider: "cod" | "mock_online"
   shippingStatus: string
   paymentStatus: boolean
+  // Hạn thanh toán đơn online (ISO); quá hạn đơn tự hủy + hoàn kho. null nếu COD/đã trả.
+  paymentDeadline?: string | null
+  // Thời điểm đơn bị hủy do quá hạn thanh toán (ISO). null nếu còn hiệu lực.
+  cancelledAt?: string | null
   details: OrderDetail[]
 }
 

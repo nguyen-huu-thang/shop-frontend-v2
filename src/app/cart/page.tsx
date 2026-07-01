@@ -4,12 +4,16 @@
 // Backend đã thêm tên/đơn giá/thành tiền cho mỗi item → hiển thị đầy đủ + tạm tính.
 // Cart page (login required).
 import Link from "next/link"
+import { useState } from "react"
+import { ShoppingCart } from "lucide-react"
 import { toast } from "sonner"
 
 import { Container } from "@/components/site/public-shell"
 import { RequireAuth } from "@/components/auth/require-auth"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useCart } from "@/lib/cart-context"
 import { ApiError } from "@/lib/api-error"
 import { formatPrice } from "@/lib/format"
@@ -24,6 +28,10 @@ function renderOptionValues(optionValues: Record<string, string>): string {
 function CartContent() {
   const { items, count, loading, update, remove } = useCart()
   const subtotal = items.reduce((sum, it) => sum + (it.subtotal || 0), 0)
+  // Item đang chờ xác nhận xóa (mở dialog).
+  // Item pending delete confirmation.
+  const [pendingRemove, setPendingRemove] = useState<CartItem | null>(null)
+  const [removing, setRemoving] = useState(false)
 
   const onUpdate = async (item: CartItem, quantity: number) => {
     if (quantity < 1) return
@@ -34,12 +42,17 @@ function CartContent() {
     }
   }
 
-  const onRemove = async (item: CartItem) => {
+  const confirmRemove = async () => {
+    if (!pendingRemove) return
+    setRemoving(true)
     try {
-      await remove(item.id)
+      await remove(pendingRemove.id)
       toast.success("Đã xóa khỏi giỏ")
+      setPendingRemove(null)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Không xóa được")
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -48,13 +61,18 @@ function CartContent() {
       <h1 className="mb-4 text-xl font-semibold">Giỏ hàng</h1>
 
       {loading && items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Đang tải giỏ hàng...</p>
+        <div className="flex flex-col gap-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </div>
       ) : items.length === 0 ? (
-        <div className="text-sm text-muted-foreground">
-          Giỏ hàng trống.{" "}
-          <Link href="/products" className="text-primary hover:underline">
-            Mua sắm ngay
-          </Link>
+        <div className="rounded-xl border border-dashed py-12 text-center">
+          <ShoppingCart className="mx-auto size-10 text-muted-foreground/50" />
+          <p className="mt-3 text-sm text-muted-foreground">Giỏ hàng của bạn đang trống.</p>
+          <Button asChild size="sm" className="mt-3">
+            <Link href="/products">Mua sắm ngay</Link>
+          </Button>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -101,7 +119,7 @@ function CartContent() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => onRemove(item)}
+                onClick={() => setPendingRemove(item)}
               >
                 Xóa
               </Button>
@@ -123,6 +141,16 @@ function CartContent() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingRemove !== null}
+        title="Xóa sản phẩm khỏi giỏ?"
+        description={pendingRemove?.productName}
+        confirmLabel="Xóa"
+        busy={removing}
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingRemove(null)}
+      />
     </Container>
   )
 }

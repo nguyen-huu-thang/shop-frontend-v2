@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PasswordInput } from "@/components/ui/password-input"
 import { resetPassword } from "@/lib/api/auth-email"
 import { ApiError } from "@/lib/api-error"
 
@@ -64,9 +65,8 @@ function ResetPasswordInner() {
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="rp-pass">Mật khẩu mới</Label>
-              <Input
+              <PasswordInput
                 id="rp-pass"
-                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"

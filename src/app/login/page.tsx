@@ -11,6 +11,7 @@ import { Container } from "@/components/site/public-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PasswordInput } from "@/components/ui/password-input"
 import {
   Card,
   CardContent,
@@ -29,10 +30,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [busy, setBusy] = useState(false)
 
-  // Điều hướng sau xác thực theo vai trò: có quyền quản trị -> /admin, khách thường -> trang chủ.
-  // Khách không có quyền nào (mọi quyền default = false) nên danh sách rỗng -> về "/".
-  // Role-based post-auth redirect: any management permission -> /admin, plain customer -> home.
+  // Điều hướng sau xác thực: ưu tiên returnUrl (trang người dùng đang muốn vào), nếu không thì
+  // theo vai trò - có quyền quản trị -> /admin, khách thường -> trang chủ.
+  // Chỉ nhận returnUrl là path nội bộ (bắt đầu "/" nhưng không "//") để tránh open-redirect.
+  // Post-auth redirect: prefer a safe internal returnUrl, else role-based (/admin or /).
   const redirectAfterAuth = useCallback(async () => {
+    const raw =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("returnUrl")
+        : null
+    if (raw && raw.startsWith("/") && !raw.startsWith("//")) {
+      router.replace(raw)
+      return
+    }
     try {
       const perms = await getMyPermissions(authFetch)
       router.replace(Array.isArray(perms) && perms.length > 0 ? "/admin" : "/")
@@ -82,9 +92,8 @@ export default function LoginPage() {
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="password">Mật khẩu</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
