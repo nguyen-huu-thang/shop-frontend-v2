@@ -1,19 +1,18 @@
-// Cấu hình thương hiệu / liên hệ - SỬA Ở ĐÂY khi bàn giao cho từng khách hàng.
-// Branding / contact config - EDIT HERE when handing off to each client.
+import type { ShopSettings } from "./types"
 
-export const siteConfig = {
-  name: "Shop",
-  tagline: "Mua sắm trực tuyến nhanh và tiện",
-  description:
-    "Cửa hàng trực tuyến - đa dạng sản phẩm, đặt hàng nhanh chóng, giao hàng tận nơi.",
-  phone: "0900 000 000",
-  email: "lienhe@shop.vn",
-  address: "123 Đường ABC, Quận 1, TP. Hồ Chí Minh",
-  // Mạng xã hội (để trống nếu không dùng).
-  // Social links (leave empty to hide).
-  social: {
-    facebook: "",
-    instagram: "",
-    zalo: "",
-  },
-} as const
+export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
+  shopName: "Cửa hàng",
+  tagline: "Mua sắm trực tuyến",
+  description: "Khám phá sản phẩm và đặt hàng trực tuyến.",
+  logoPath: null,
+  coverPath: null,
+  footerNote: null,
+  theme: { primaryColor: "#2563EB", font: "be-vietnam-pro" },
+  home: { heroTitle: null, heroSubtitle: null, announcement: null },
+  contact: { hotline: null, zalo: null, email: null, address: null },
+  social: { facebook: null, instagram: null, tiktok: null, youtube: null },
+  owner: { name: null, address: null, taxCode: null, registration: null },
+  payments: { cod: true, mockOnline: true },
+  policies: [],
+  updatedAt: "",
+}

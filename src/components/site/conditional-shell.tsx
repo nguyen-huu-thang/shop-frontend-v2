@@ -5,12 +5,20 @@
 // Pick the shell by route: /admin uses its own admin shell; everything else uses PublicShell.
 import { usePathname } from "next/navigation"
 
+import type { ShopSettings } from "@/lib/types"
+
 import { PublicShell } from "./public-shell"
 
-export function ConditionalShell({ children }: { children: React.ReactNode }) {
+export function ConditionalShell({
+  children,
+  settings,
+}: {
+  children: React.ReactNode
+  settings: ShopSettings
+}) {
   const pathname = usePathname()
   const isAdmin = pathname?.startsWith("/admin")
 
   if (isAdmin) return <>{children}</>
-  return <PublicShell>{children}</PublicShell>
+  return <PublicShell settings={settings}>{children}</PublicShell>
 }

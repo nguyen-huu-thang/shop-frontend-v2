@@ -5,6 +5,11 @@ cũ. Đây là điểm vào ngữ cảnh - đọc trước khi code.
 
 ## Đang ở đâu
 
+- ✅ **Cấu hình cửa hàng trung tính (2026-10-03):** tên/logo/theme/nội dung/contact/policies lấy từ
+  backend; `/admin/settings` sửa thương hiệu và chính sách; trang chủ, header và footer dùng nội dung chung.
+- ✅ **Thuộc tính và SKU tổng quát:** sản phẩm khai báo thuộc tính riêng; admin sửa giá/tồn theo tổ hợp;
+  SKU bị bỏ khỏi ma trận chuyển về tồn kho 0 để giữ liên kết đơn cũ.
+
 - ✅ **Phần 1 (core)** xong: khung Next 16, tầng `lib` (config/api-client/server-api/auth-context/
   jwt/types/format), mô hình không-proxy, token RAM + refresh cookie.
 - ✅ **Phần 2 (tính năng)** xong: storefront đầy đủ + store manager `/admin`. Đã nối các cập nhật
@@ -47,7 +52,7 @@ cũ. Đây là điểm vào ngữ cảnh - đọc trước khi code.
     `components/site/order-timeline.tsx`, `components/ui/confirm-dialog.tsx`.
   - **Chờ user/backend:** nghi giá lệch card vs chi tiết (#5, cần xác nhận dữ liệu thật), hủy đơn
     chủ động + thông báo realtime (cần endpoint backend), QA thủ công + Lighthouse/A11y.
-- ⏭️ **Tiếp theo:** editor thuộc tính/biến thể (SKU) sản phẩm. Phần còn chờ backend đã nêu ở Phần 6.
+- ⏭️ **Tiếp theo:** nhập dữ liệu demo trung tính và rà giao diện với cấu hình một cửa hàng mới.
 - Dọn dẹp: `src/components/auth/auth-demo.tsx` là widget thử Phần 1, không còn dùng - có thể xóa.
 - Để chạy thử: bật backend cổng 8088 rồi `npm run dev` (xem `.env.local`). Tài khoản: `admin`/`Admin@123`,
   demo `Demo@123`. Coupon demo: `WELCOME10`/`SALE50K`/`FREESHIP`/`BIGSALE20`.

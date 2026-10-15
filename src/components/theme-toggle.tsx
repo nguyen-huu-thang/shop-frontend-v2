@@ -20,6 +20,7 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
+      className="size-11 rounded-full"
       aria-label="Chuyển chế độ sáng/tối"
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >

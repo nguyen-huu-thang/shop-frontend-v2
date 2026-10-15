@@ -10,6 +10,7 @@ import type {
   MessageResponse,
   Order,
   Product,
+  ProductVariantMatrix,
   Review,
   UserInfo,
 } from "@/lib/types"
@@ -27,6 +28,7 @@ export interface ProductPayload {
   discountPercentage?: number | null
   price?: number | null
   stock?: number
+  attribute?: Record<string, string[]>
 }
 
 export const createProduct = (authFetch: AuthFetch, payload: ProductPayload) =>
@@ -47,6 +49,19 @@ export const updateProduct = (
 
 export const deleteProduct = (authFetch: AuthFetch, id: number) =>
   authFetch<MessageResponse>(`/api/products/${id}`, { method: "DELETE" })
+
+export const getProductVariants = (authFetch: AuthFetch, id: number) =>
+  authFetch<ProductVariantMatrix>(`/api/products/${id}/variants`)
+
+export const saveProductVariants = (
+  authFetch: AuthFetch,
+  id: number,
+  payload: { attribute: string[]; value: Array<[string[], [number, number]]> }
+) =>
+  authFetch<MessageResponse>(`/api/products/${id}/attribute`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
 
 // Sản phẩm cho khu quản trị: chỉ mảng category nhân viên phụ trách (superadmin thấy tất cả).
 // Managed products: only the categories an employee handles (superadmin sees all).

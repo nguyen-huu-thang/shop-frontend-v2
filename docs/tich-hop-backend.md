@@ -52,7 +52,17 @@ API khác.
 | `payments.ts` | callback cổng thanh toán giả lập |
 | `notifications.ts` | hộp thư, đếm chưa đọc, đánh dấu đọc, broadcast |
 | `recommendations.ts` | trending / for-you / recently-viewed / related |
-| `admin.ts` | sản phẩm (managed), danh mục, coupon, đơn (đổi trạng thái giao), user, dashboard |
+| `admin.ts` | sản phẩm, thuộc tính/SKU, danh mục, coupon, đơn, user, dashboard |
+| `shop-settings.ts` | cấu hình thương hiệu, upload logo/ảnh bìa và trang chính sách |
+
+## Cấu hình cửa hàng
+
+- `GET /api/shop-settings` là nguồn cấu hình công khai cho tên, logo, màu/font, hero, liên hệ, mạng xã hội,
+  thông tin đơn vị bán hàng, cờ COD/online mô phỏng và các chính sách đã xuất bản.
+- `GET /api/shop-settings/options` trả danh sách font, slug chính sách và định dạng ảnh được phép.
+- `/admin/settings` ghi cấu hình và chính sách bằng quyền `manage_system_settings`.
+- Nội dung chính sách dùng Markdown; frontend render an toàn và không cho phép HTML thô.
+- Mỗi backend database phục vụ một cửa hàng; mỗi website giữ một clone frontend riêng.
 
 Danh sách endpoint đầy đủ + quyền: xem [API](https://github.com/nguyen-huu-thang/xime-shop-example/blob/main/docs/api.md)
 ở repo backend.

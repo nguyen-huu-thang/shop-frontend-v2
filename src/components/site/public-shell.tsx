@@ -1,15 +1,23 @@
 import { SiteFooter } from "./site-footer"
 import { SiteHeader } from "./site-header"
+import { ShopSettingsProvider } from "./shop-settings-context"
+import type { ShopSettings } from "@/lib/types"
 
 // Khung bao trang public: Header + nội dung + Footer.
 // Public page shell: Header + content + Footer.
-export function PublicShell({ children }: { children: React.ReactNode }) {
+export function PublicShell({
+  children,
+  settings,
+}: {
+  children: React.ReactNode
+  settings: ShopSettings
+}) {
   return (
-    <>
-      <SiteHeader />
+    <ShopSettingsProvider settings={settings}>
+      <SiteHeader settings={settings} />
       <main className="flex-1">{children}</main>
-      <SiteFooter />
-    </>
+      <SiteFooter settings={settings} />
+    </ShopSettingsProvider>
   )
 }
 
@@ -23,6 +31,6 @@ export function Container({
   children: React.ReactNode
 }) {
   return (
-    <div className={`mx-auto w-full max-w-6xl px-4 ${className}`}>{children}</div>
+    <div className={`mx-auto w-full max-w-7xl px-4 sm:px-6 ${className}`}>{children}</div>
   )
 }

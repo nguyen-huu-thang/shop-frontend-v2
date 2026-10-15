@@ -4,9 +4,11 @@
 // Search results (client): reads keywords + price filter from URL.
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Search } from "lucide-react"
 
 import { Container } from "@/components/site/public-shell"
 import { ProductCard } from "@/components/site/product-card"
+import { Reveal, RevealGroup, RevealItem } from "@/components/site/reveal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -80,60 +82,70 @@ export function SearchClient() {
   const totalPages = data ? Math.max(1, Math.ceil(data.total / LIMIT)) : 1
 
   return (
-    <Container className="py-8">
-      <h1 className="mb-1 text-xl font-semibold">Kết quả tìm kiếm</h1>
+    <Container className="py-9 sm:py-12">
+      <Reveal className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Tìm kiếm</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-balance sm:text-4xl">Kết quả tìm kiếm</h1>
+      </Reveal>
       {keywords ? (
-        <p className="mb-4 text-sm text-muted-foreground">
-          Từ khóa: <span className="font-medium">{keywords}</span>
-          {data ? ` - ${data.total} kết quả` : ""}
-        </p>
+        <div className="mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <span>Từ khóa</span>
+          <span className="rounded-full border border-primary/15 bg-primary/5 px-3 py-1 font-medium text-foreground">{keywords}</span>
+          {data ? <span>{data.total} kết quả</span> : null}
+        </div>
       ) : (
-        <p className="text-sm text-muted-foreground">Nhập từ khóa để tìm sản phẩm.</p>
+        <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-12 text-center">
+          <Search className="mx-auto size-8 text-muted-foreground/60" aria-hidden="true" />
+          <p className="mt-3 font-medium">Nhập từ khóa để bắt đầu</p>
+          <p className="mt-1 text-sm text-muted-foreground">Bạn có thể tìm theo tên hoặc thông tin sản phẩm.</p>
+        </div>
       )}
 
       {keywords ? (
-        <form onSubmit={applyFilter} className="mb-6 flex flex-wrap items-end gap-3">
+        <form onSubmit={applyFilter} className="mb-7 flex flex-wrap items-end gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
           <div className="grid gap-1">
-            <Label htmlFor="min">Giá từ</Label>
+            <Label htmlFor="min-price">Giá từ</Label>
             <Input
-              id="min"
+              id="min-price"
               type="number"
               value={minInput}
               onChange={(e) => setMinInput(e.target.value)}
-              className="w-32"
+              className="h-11 w-36 rounded-xl bg-background"
             />
           </div>
           <div className="grid gap-1">
-            <Label htmlFor="max">Đến</Label>
+            <Label htmlFor="max-price">Đến giá</Label>
             <Input
-              id="max"
+              id="max-price"
               type="number"
               value={maxInput}
               onChange={(e) => setMaxInput(e.target.value)}
-              className="w-32"
+              className="h-11 w-36 rounded-xl bg-background"
             />
           </div>
-          <Button type="submit" variant="outline" size="sm">
+          <Button type="submit" variant="outline" size="lg" className="h-11 rounded-full px-5">
             Lọc giá
           </Button>
         </form>
       ) : null}
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />
+            <Skeleton key={i} className="aspect-square w-full rounded-2xl" />
           ))}
         </div>
       ) : error ? (
-        <p className="text-sm text-destructive">Lỗi: {error}</p>
+        <p role="status" className="rounded-2xl border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive">Không thể tìm sản phẩm lúc này. Vui lòng thử lại sau.</p>
       ) : data && data.results.length > 0 ? (
         <>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {data.results.map((r) => (
-              <ProductCard key={r.product.id} product={r.product} />
+              <RevealItem key={r.product.id} className="h-full">
+                <ProductCard product={r.product} />
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
           {totalPages > 1 ? (
             <div className="mt-6 flex items-center justify-center gap-3">
               <Button
@@ -159,7 +171,11 @@ export function SearchClient() {
           ) : null}
         </>
       ) : keywords ? (
-        <p className="text-sm text-muted-foreground">Không tìm thấy sản phẩm phù hợp.</p>
+        <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-12 text-center">
+          <Search className="mx-auto size-8 text-muted-foreground/60" aria-hidden="true" />
+          <p className="mt-3 font-medium">Chưa tìm thấy sản phẩm phù hợp</p>
+          <p className="mt-1 text-sm text-muted-foreground">Thử thay đổi từ khóa hoặc khoảng giá.</p>
+        </div>
       ) : null}
     </Container>
   )

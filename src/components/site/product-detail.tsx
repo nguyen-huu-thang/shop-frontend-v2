@@ -167,10 +167,10 @@ export function ProductDetail({ product }: { product: Product }) {
 
   return (
     <>
-    <div className="grid gap-8 md:grid-cols-2">
+    <div className="grid gap-7 md:grid-cols-2 md:gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
       {/* Ảnh */}
-      <div className="md:sticky md:top-20 md:self-start">
-        <div className="relative grid aspect-square place-items-center overflow-hidden rounded-xl border bg-muted">
+      <div className="md:sticky md:top-24 md:self-start">
+        <div className="relative grid aspect-square place-items-center overflow-hidden rounded-3xl border border-border/70 bg-muted shadow-lg shadow-foreground/5">
           {mainImage ? (
             <Image
               src={mainImage}
@@ -185,15 +185,15 @@ export function ProductDetail({ product }: { product: Product }) {
           )}
         </div>
         {images.length > 1 ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto">
+          <div className="mt-4 flex gap-2.5 overflow-x-auto pb-1">
             {images.map((f, i) => (
               <button
                 key={f.id}
                 type="button"
                 onClick={() => setActiveImg(i)}
                 aria-label={`Ảnh ${i + 1}`}
-                className={`relative size-16 shrink-0 overflow-hidden rounded-md border transition-colors ${
-                  i === activeImg ? "border-primary ring-2 ring-primary/40" : "hover:border-primary/40"
+                className={`relative size-16 shrink-0 overflow-hidden rounded-xl border transition-[border-color,box-shadow] ${
+                  i === activeImg ? "border-primary ring-2 ring-primary/35" : "border-border/70 hover:border-primary/40"
                 }`}
               >
                 <Image
@@ -210,21 +210,22 @@ export function ProductDetail({ product }: { product: Product }) {
       </div>
 
       {/* Thông tin */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-card p-5 shadow-sm sm:p-7">
         <div>
-          <h1 className="text-2xl font-semibold">{product.name}</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Chi tiết sản phẩm</p>
+          <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl">{product.name}</h1>
           {product.locationAddress ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground">
               Cơ sở: {product.locationAddress}
             </p>
           ) : null}
         </div>
 
-        <div className="flex items-baseline gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-2xl bg-muted/45 p-4">
           {priceIsFrom ? (
             <span className="text-sm text-muted-foreground">Từ</span>
           ) : null}
-          <span className="text-2xl font-bold">{formatPrice(finalPrice)}</span>
+          <span className="text-3xl font-bold tracking-tight text-primary">{formatPrice(finalPrice)}</span>
           {hasDiscount && price != null ? (
             <span className="text-sm text-muted-foreground line-through">
               {formatPrice(price)}
@@ -248,25 +249,25 @@ export function ProductDetail({ product }: { product: Product }) {
         ) : null}
 
         {product.description ? (
-          <p className="text-sm leading-relaxed">{product.description}</p>
+          <p className="rounded-2xl border border-border/60 bg-background/70 p-4 text-sm leading-7 text-muted-foreground sm:text-base">{product.description}</p>
         ) : null}
 
         {/* Chọn phân loại */}
         {hasVariants ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/70 p-4">
             {attributeNames.map((name) => (
               <div key={name}>
-                <Label className="mb-1">{name}</Label>
+                <Label className="mb-2 block font-semibold">{name}</Label>
                 <div className="flex flex-wrap gap-2">
                   {product.attribute[name].map((value) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => pick(name, value)}
-                      className={`rounded-md border px-3 py-1 text-sm transition-colors ${
+                      className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-medium transition-[background-color,border-color,color,box-shadow] ${
                         selected[name] === value
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "hover:bg-muted"
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                          : "border-border/70 bg-card hover:border-primary/35 hover:bg-primary/5"
                       }`}
                     >
                       {value}
@@ -279,8 +280,8 @@ export function ProductDetail({ product }: { product: Product }) {
         ) : null}
 
         {/* Số lượng + hành động */}
-        <div className="flex items-center gap-2">
-          <Label htmlFor="qty">Số lượng</Label>
+        <div className="flex flex-wrap items-center gap-3">
+          <Label htmlFor="qty" className="font-semibold">Số lượng</Label>
           <input
             id="qty"
             type="number"
@@ -295,15 +296,15 @@ export function ProductDetail({ product }: { product: Product }) {
               setQuantity(stock != null && stock > 0 ? Math.min(n, stock) : n)
             }}
             disabled={outOfStock}
-            className="h-8 w-20 rounded-md border bg-transparent px-2 text-sm disabled:opacity-50"
+            className="h-11 w-24 rounded-xl border border-border/70 bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
           />
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={handleAddToCart} disabled={busy || outOfStock || overStock}>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button size="lg" className="h-11 flex-1 rounded-full shadow-sm shadow-primary/15" onClick={handleAddToCart} disabled={busy || outOfStock || overStock}>
             {outOfStock ? "Hết hàng" : "Thêm vào giỏ"}
           </Button>
-          <Button variant="outline" onClick={handleAddWishlist} disabled={busy}>
+          <Button size="lg" variant="outline" className="h-11 rounded-full px-5" onClick={handleAddWishlist} disabled={busy}>
             Yêu thích
           </Button>
         </div>
@@ -311,12 +312,14 @@ export function ProductDetail({ product }: { product: Product }) {
         <Separator />
 
         <ProductReviews productId={product.id} />
-        <ReviewForm productId={product.id} />
+        <div className="rounded-2xl border border-border/60 bg-background/70 p-4 sm:p-5">
+          <ReviewForm productId={product.id} />
+        </div>
       </div>
     </div>
 
     {/* Gợi ý hay mua cùng (full-width dưới phần chi tiết) */}
-    <div className="mt-10">
+    <div className="mt-12 rounded-3xl bg-muted/30 px-4 py-8 sm:mt-16 sm:px-7 sm:py-10">
       <RelatedProducts productId={product.id} />
     </div>
     </>
@@ -338,7 +341,7 @@ function ProductReviews({ productId }: { productId: number }) {
 
   return (
     <section>
-      <h2 className="mb-2 font-medium">Đánh giá sản phẩm</h2>
+      <h2 className="mb-3 text-lg font-semibold tracking-tight">Đánh giá sản phẩm</h2>
       {loading ? (
         <p className="text-sm text-muted-foreground">Đang tải đánh giá...</p>
       ) : reviews.length === 0 ? (
@@ -346,7 +349,7 @@ function ProductReviews({ productId }: { productId: number }) {
       ) : (
         <ul className="flex flex-col gap-3">
           {reviews.map((r) => (
-            <li key={r.id} className="rounded-lg border p-3">
+            <li key={r.id} className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
               <div className="text-sm font-medium text-amber-600">
                 {"★".repeat(r.rating)}
                 <span className="text-muted-foreground">
@@ -400,8 +403,8 @@ function ReviewForm({ productId }: { productId: number }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2">
-      <h2 className="font-medium">Viết đánh giá</h2>
+    <form onSubmit={submit} className="flex flex-col gap-3">
+      <h2 className="text-base font-semibold tracking-tight">Viết đánh giá</h2>
       <div className="flex items-center gap-2">
         <Label htmlFor="rating">Điểm</Label>
         <select
@@ -409,7 +412,7 @@ function ReviewForm({ productId }: { productId: number }) {
           aria-label="Điểm đánh giá"
           value={rating}
           onChange={(e) => setRating(Number(e.target.value))}
-          className="h-8 rounded-md border bg-transparent px-2 text-sm"
+          className="h-11 rounded-xl border border-border/70 bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           {[5, 4, 3, 2, 1].map((r) => (
             <option key={r} value={r}>
@@ -423,7 +426,7 @@ function ReviewForm({ productId }: { productId: number }) {
         onChange={(e) => setComment(e.target.value)}
         placeholder="Nhận xét của bạn..."
       />
-      <Button type="submit" size="sm" disabled={busy} className="w-fit">
+      <Button type="submit" size="sm" disabled={busy} className="min-h-11 w-fit rounded-full px-4">
         Gửi đánh giá
       </Button>
     </form>

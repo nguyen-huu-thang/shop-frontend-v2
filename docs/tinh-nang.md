@@ -71,12 +71,13 @@ Backend tự ghi tín hiệu khi user tương tác - frontend không gọi API g
 | Trang | Chức năng |
 |---|---|
 | Tổng quan | Dashboard thống kê |
-| Sản phẩm | Danh sách theo mảng phụ trách (`/products/managed`), tạo/sửa/xóa |
+| Sản phẩm | Danh sách theo mảng phụ trách (`/products/managed`), tạo/sửa/xóa, thuộc tính và biến thể SKU |
 | Danh mục | CRUD danh mục |
 | Mã giảm giá | CRUD coupon với đầy đủ trường nâng cấp (loại %/tiền, trần, đơn tối thiểu, phạm vi, giới hạn lượt, 1 lần/người) |
 | Đơn hàng | Xem, đổi trạng thái giao hàng (backend tự thông báo cho chủ đơn) |
 | Đánh giá | Duyệt/bỏ duyệt, xóa |
 | Người dùng | Quản trị người dùng |
 | Thông báo | Gửi broadcast tới mọi người dùng |
+| Cấu hình cửa hàng | Sửa thương hiệu, giao diện, liên hệ, phương thức thanh toán và chính sách |
 
 Menu ẩn/hiện theo quyền hiệu lực; backend vẫn thực thi quyền thật.

@@ -41,8 +41,12 @@ HTML render sẵn (SSR cho trang công khai, tốt cho SEO)
 - **Tài khoản**: hồ sơ, đổi mật khẩu, xác minh email, quên/đặt lại mật khẩu, OTP.
 - **Thông báo in-app**: chuông + badge chưa đọc trong header.
 - **Gợi ý cá nhân hóa**: "thịnh hành", "gợi ý cho bạn", "đã xem gần đây", "hay mua cùng".
+- **Cấu hình thương hiệu**: tên, logo, màu, font, nội dung trang chủ, liên hệ, phương thức thanh toán và
+  chính sách được quản lý trong `/admin/settings`.
+- **Thuộc tính và SKU**: khai báo thuộc tính theo từng sản phẩm và quản lý giá/tồn kho cho từng tổ hợp.
 - **Khu quản trị (`/admin`)**: sản phẩm, danh mục, mã giảm giá, đơn hàng (đổi trạng thái giao), đánh
-  giá, người dùng, gửi thông báo broadcast, dashboard thống kê. Menu ẩn/hiện theo quyền.
+  giá, người dùng, cấu hình thương hiệu, biến thể/SKU, gửi thông báo broadcast, dashboard thống kê.
+  Menu ẩn/hiện theo quyền.
 
 Chi tiết từng mảng xem [`docs/tinh-nang.md`](docs/tinh-nang.md).
 
@@ -52,9 +56,10 @@ Chi tiết từng mảng xem [`docs/tinh-nang.md`](docs/tinh-nang.md).
 
 | Hạng mục | Lựa chọn |
 |---|---|
-| Framework | Next.js 16 (App Router) + React 19 |
+| Framework | Next.js 16.3.8 (App Router) + React 19 |
 | Ngôn ngữ | TypeScript |
-| Giao diện | Tailwind CSS v4 + shadcn/ui + lucide-react |
+| Giao diện | Tailwind CSS v4 + shadcn/ui + lucide-react + Motion |
+| Nội dung chính sách | Markdown an toàn qua react-markdown |
 | Form / validate | react-hook-form + zod |
 | Theme | next-themes (sáng/tối) |
 | Toast | sonner |
@@ -78,8 +83,11 @@ Chi tiết: [`docs/kien-truc.md`](docs/kien-truc.md).
 
 ### Yêu cầu
 
-- Node.js 20+
+- Node.js 20.9+
 - Backend đang chạy ở cổng `8088` (xem repo backend)
+
+Database demo có tài khoản quản trị `admin` / `Admin@123` và hai sản phẩm trung tính được gieo bằng
+`python -m app.utils.seed_demo_catalog`. Đổi mật khẩu quản trị trước khi đưa website lên môi trường thật.
 
 ### Cài đặt và chạy
 

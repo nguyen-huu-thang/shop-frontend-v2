@@ -126,7 +126,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const doFetch = (token: string | null) => {
         const headers = new Headers(init.headers)
         if (token) headers.set("authorization", `Bearer ${token}`)
-        if (!headers.has("content-type") && init.body) {
+        if (
+          !headers.has("content-type") &&
+          init.body &&
+          !(typeof FormData !== "undefined" && init.body instanceof FormData)
+        ) {
           headers.set("content-type", "application/json")
         }
         return fetch(api(path), { ...init, headers, credentials: "include" })

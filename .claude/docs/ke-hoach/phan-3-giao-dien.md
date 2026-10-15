@@ -25,16 +25,16 @@ và hoàn thiện SEO - đúng động lực chuyển sang Next.js.
 
 ## B. Storefront
 
-- [ ] **3.3** Header: logo, thanh tìm kiếm, icon giỏ (số lượng), menu tài khoản, điều hướng danh mục.
-- [ ] **3.4** Footer + các widget (liên hệ, mạng xã hội) theo bản cũ.
+- [x] **3.3** Header: logo, thanh tìm kiếm, icon giỏ (số lượng), menu tài khoản, điều hướng danh mục.
+- [x] **3.4** Footer + các widget (liên hệ, mạng xã hội) theo bản cũ.
 - [ ] **3.5** Trang chủ: hero/banner (carousel), các mục sản phẩm, danh mục nổi bật.
 - [ ] **3.6** Thẻ sản phẩm + lưới + bộ lọc + phân trang (suy "hết trang" theo `limit`).
-- [ ] **3.7** Trang chi tiết: gallery ảnh, chọn thuộc tính mượt, giá/tồn cập nhật, review + đánh giá sao.
-- [ ] **3.8** Giỏ hàng + checkout: bố cục rõ ràng, tóm tắt đơn, trạng thái thanh toán/giao hàng.
+- [x] **3.7** Trang chi tiết: gallery ảnh, chọn thuộc tính mượt, giá/tồn cập nhật, review + đánh giá sao.
+- [x] **3.8** Giỏ hàng + checkout: bố cục rõ ràng, tóm tắt đơn, trạng thái thanh toán/giao hàng.
 
 ## C. Store manager
 
-- [ ] **3.9** Khung admin (sidebar + topbar) theo mẫu anh em (`components/admin` của dental-clinic).
+- [x] **3.9** Khung admin (sidebar + topbar) theo mẫu anh em (`components/admin` của dental-clinic).
 - [ ] **3.10** Bảng dữ liệu, form dialog, xác nhận xóa, phân trang nhất quán cho mọi module quản trị.
 
 ## D. Trải nghiệm & chất lượng

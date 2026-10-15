@@ -21,6 +21,57 @@ export interface ApiErrorBody {
   details?: unknown
 }
 
+export interface ShopSettings {
+  shopName: string
+  tagline: string | null
+  description: string | null
+  logoPath: string | null
+  coverPath: string | null
+  footerNote: string | null
+  theme: { primaryColor: string; font: string }
+  home: {
+    heroTitle: string | null
+    heroSubtitle: string | null
+    announcement: string | null
+  }
+  contact: {
+    hotline: string | null
+    zalo: string | null
+    email: string | null
+    address: string | null
+  }
+  social: {
+    facebook: string | null
+    instagram: string | null
+    tiktok: string | null
+    youtube: string | null
+  }
+  owner: {
+    name: string | null
+    address: string | null
+    taxCode: string | null
+    registration: string | null
+  }
+  payments: { cod: boolean; mockOnline: boolean }
+  policies: Array<{ slug: string; title: string }>
+  updatedAt: string
+}
+
+export interface ShopSettingOptions {
+  fonts: Array<{ key: string; label: string }>
+  policySlugs: Array<{ slug: string; defaultTitle: string }>
+  paymentMethods: Array<{ key: "cod" | "mockOnline"; label: string; available: boolean }>
+  imageExtensions: string[]
+}
+
+export interface ShopPolicyPage {
+  slug: string
+  title: string
+  content: string
+  updatedAt: string
+  isPublished?: boolean
+}
+
 // ── Category (category_response.py - snake_case) ─────────────────────────────
 export interface Category {
   id: number
@@ -57,6 +108,17 @@ export interface ProductOption {
   id: number
   price: number
   stock: number
+}
+
+export interface ProductVariantMatrix {
+  productId: number
+  attributes: Array<{ name: string; values: string[] }>
+  options: Array<{
+    id: number
+    values: Record<string, string>
+    price: number | null
+    stock: number
+  }>
 }
 
 export interface OptionDefault {

@@ -4,7 +4,7 @@
 import type { MetadataRoute } from "next"
 
 import { SITE_URL } from "@/lib/config"
-import { getCategories, getProducts } from "@/lib/server-api"
+import { getCategories, getProducts, getShopSettingsForStore } from "@/lib/server-api"
 import type { Category, Product } from "@/lib/types"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -16,13 +16,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let products: Product[] = []
   let categories: Category[] = []
+  let policyRoutes: MetadataRoute.Sitemap = []
   try {
     // Lấy tối đa một lượng sản phẩm hợp lý cho sitemap.
     // Fetch a reasonable number of products for the sitemap.
-    ;[products, categories] = await Promise.all([
+    const [productList, categoryList, settings] = await Promise.all([
       getProducts(1, 200),
       getCategories(),
+      getShopSettingsForStore(),
     ])
+    products = productList
+    categories = categoryList
+    policyRoutes = settings.policies.map((policy) => ({
+      url: `${SITE_URL}/policies/${encodeURIComponent(policy.slug)}`,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    }))
   } catch {
     // Bỏ qua - trả phần tĩnh.
   }
@@ -39,5 +48,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
-  return [...staticRoutes, ...productRoutes, ...categoryRoutes]
+  return [...staticRoutes, ...productRoutes, ...categoryRoutes, ...policyRoutes]
 }

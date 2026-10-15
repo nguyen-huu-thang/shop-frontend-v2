@@ -3,6 +3,7 @@
 // Thanh toán (cần đăng nhập): chọn địa chỉ từ sổ + mã giảm giá + phương thức, xem trước tổng tiền
 // rồi đặt hàng. COD -> tới đơn; mock_online -> trang thanh toán giả lập.
 // Checkout (login required): pick saved address + coupon + method, preview totals, place order.
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -11,6 +12,7 @@ import { AddressForm } from "@/components/account/address-form"
 import { formatAddress } from "@/components/account/address-manager"
 import { RequireAuth } from "@/components/auth/require-auth"
 import { Container } from "@/components/site/public-shell"
+import { useShopSettings } from "@/components/site/shop-settings-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -30,6 +32,7 @@ function CheckoutContent() {
   const router = useRouter()
   const { authFetch } = useAuth()
   const { items, count, refresh } = useCart()
+  const shopSettings = useShopSettings()
 
   const [addresses, setAddresses] = useState<Address[]>([])
   const [loadingAddr, setLoadingAddr] = useState(true)
@@ -37,7 +40,9 @@ function CheckoutContent() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [couponInput, setCouponInput] = useState("")
   const [appliedCoupon, setAppliedCoupon] = useState<string | undefined>(undefined)
-  const [provider, setProvider] = useState<PaymentProvider>("cod")
+  const [provider, setProvider] = useState<PaymentProvider>(
+    shopSettings.payments.cod ? "cod" : "mock_online"
+  )
   const [preview, setPreview] = useState<OrderPreview | null>(null)
   const [busy, setBusy] = useState(false)
   const [couponBusy, setCouponBusy] = useState(false)
@@ -46,6 +51,16 @@ function CheckoutContent() {
   // Khóa ổn định theo nội dung giỏ để effect preview chạy lại khi item đổi (không chỉ số lượng phần tử).
   // Stable key over cart contents so the preview effect reruns on item changes, not just count.
   const cartKey = cartIds.join(",")
+  const codAvailable = shopSettings.payments.cod
+  const onlineAvailable = shopSettings.payments.mockOnline
+
+  useEffect(() => {
+    if (provider === "cod" && !codAvailable && onlineAvailable) {
+      setProvider("mock_online")
+    } else if (provider === "mock_online" && !onlineAvailable && codAvailable) {
+      setProvider("cod")
+    }
+  }, [provider, codAvailable, onlineAvailable])
 
   // Tải sổ địa chỉ; tự chọn địa chỉ mặc định nếu có.
   const loadAddresses = useCallback(() => {
@@ -172,26 +187,28 @@ function CheckoutContent() {
   }
 
   return (
-    <Container className="py-8">
-      <h1 className="mb-4 text-xl font-semibold">Thanh toán</h1>
+    <Container className="py-9 sm:py-12">
+      <div className="mb-7 sm:mb-9">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Hoàn tất đơn hàng</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-balance sm:text-4xl">Thanh toán</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Chọn địa chỉ, phương thức thanh toán và kiểm tra tổng đơn.</p>
+      </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Giỏ hàng trống.{" "}
-          <a href="/products" className="text-primary hover:underline">
-            Tiếp tục mua sắm
-          </a>
-        </p>
+        <div className="rounded-3xl border border-dashed border-border bg-card px-5 py-12 text-center">
+          <p className="font-medium">Giỏ hàng đang trống</p>
+          <Link href="/products" className="mt-2 inline-flex text-sm font-semibold text-primary hover:underline">Tiếp tục mua sắm</Link>
+        </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           {/* Cột trái: địa chỉ + phương thức + coupon */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4 sm:gap-5">
             {/* Địa chỉ giao hàng */}
-            <section>
+            <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Địa chỉ giao hàng</h2>
+                <h2 className="text-base font-semibold sm:text-lg">Địa chỉ giao hàng</h2>
                 {!addingAddr ? (
-                  <Button size="sm" variant="outline" onClick={() => setAddingAddr(true)}>
+                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => setAddingAddr(true)}>
                     Thêm địa chỉ
                   </Button>
                 ) : null}
@@ -221,12 +238,12 @@ function CheckoutContent() {
                   {addresses.map((a) => (
                     <label
                       key={a.id}
-                      className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm"
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 text-sm transition-colors ${selectedId === a.id ? "border-primary/45 bg-primary/5 ring-1 ring-primary/15" : "border-border/70 bg-background hover:bg-muted/50"}`}
                     >
                       <input
                         type="radio"
                         name="address"
-                        className="mt-1"
+                        className="mt-1 size-4 accent-primary"
                         checked={selectedId === a.id}
                         onChange={() => setSelectedId(a.id)}
                       />
@@ -245,33 +262,39 @@ function CheckoutContent() {
             </section>
 
             {/* Phương thức thanh toán */}
-            <section>
-              <h2 className="mb-2 text-lg font-semibold">Phương thức thanh toán</h2>
+            <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+              <h2 className="mb-3 text-base font-semibold sm:text-lg">Phương thức thanh toán</h2>
               <div className="flex flex-col gap-2 text-sm">
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border p-3">
-                  <input
-                    type="radio"
-                    name="provider"
-                    checked={provider === "cod"}
-                    onChange={() => setProvider("cod")}
-                  />
-                  Thanh toán khi nhận hàng (COD)
-                </label>
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border p-3">
-                  <input
-                    type="radio"
-                    name="provider"
-                    checked={provider === "mock_online"}
-                    onChange={() => setProvider("mock_online")}
-                  />
-                  Thanh toán online (giả lập)
-                </label>
+                {codAvailable ? (
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition-colors ${provider === "cod" ? "border-primary/45 bg-primary/5 ring-1 ring-primary/15" : "border-border/70 bg-background hover:bg-muted/50"}`}>
+                    <input
+                      type="radio"
+                      name="provider"
+                      className="size-4 accent-primary"
+                      checked={provider === "cod"}
+                      onChange={() => setProvider("cod")}
+                    />
+                    Thanh toán khi nhận hàng (COD)
+                  </label>
+                ) : null}
+                {onlineAvailable ? (
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition-colors ${provider === "mock_online" ? "border-primary/45 bg-primary/5 ring-1 ring-primary/15" : "border-border/70 bg-background hover:bg-muted/50"}`}>
+                    <input
+                      type="radio"
+                      name="provider"
+                      className="size-4 accent-primary"
+                      checked={provider === "mock_online"}
+                      onChange={() => setProvider("mock_online")}
+                    />
+                    Thanh toán trực tuyến mô phỏng
+                  </label>
+                ) : null}
               </div>
             </section>
 
             {/* Mã giảm giá */}
-            <section>
-              <h2 className="mb-2 text-lg font-semibold">Mã giảm giá</h2>
+            <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+              <h2 className="mb-3 text-base font-semibold sm:text-lg">Mã giảm giá</h2>
               <div className="flex max-w-sm items-end gap-2">
                 <div className="grid flex-1 gap-1.5">
                   <Label htmlFor="coupon">Nhập mã</Label>
@@ -280,11 +303,13 @@ function CheckoutContent() {
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
                     placeholder="VD: WELCOME10"
+                    className="h-11 rounded-xl bg-background"
                   />
                 </div>
                 <Button
                   type="button"
                   variant="outline"
+                  className="h-11 rounded-full px-4"
                   onClick={applyCoupon}
                   disabled={couponBusy}
                 >
@@ -311,9 +336,9 @@ function CheckoutContent() {
 
           {/* Cột phải: tóm tắt đơn */}
           <aside>
-            <Card size="sm" className="sticky top-20">
-              <CardContent className="pt-4">
-                <h2 className="mb-3 text-lg font-semibold">Đơn hàng ({count})</h2>
+            <Card size="sm" className="sticky top-20 overflow-hidden rounded-2xl border-border/70 shadow-lg shadow-foreground/5">
+              <CardContent className="p-5 sm:p-6">
+                <h2 className="mb-4 text-lg font-bold tracking-tight">Đơn hàng <span className="text-sm font-medium text-muted-foreground">({count})</span></h2>
                 <ul className="mb-3 space-y-1 text-sm">
                   {items.map((it) => (
                     <li key={it.id} className="flex justify-between gap-2">
@@ -336,7 +361,7 @@ function CheckoutContent() {
                       <Row label="Giảm phí ship" value={`- ${formatPrice(preview.shipDiscount)}`} />
                     ) : null}
                     <Separator className="my-2" />
-                    <div className="flex justify-between text-base font-semibold">
+                    <div className="flex justify-between text-base font-bold">
                       <span>Tổng cộng</span>
                       <span>{formatPrice(preview.total)}</span>
                     </div>
@@ -345,7 +370,8 @@ function CheckoutContent() {
                   <p className="text-sm text-muted-foreground">Đang tính tổng tiền...</p>
                 )}
                 <Button
-                  className="mt-4 w-full"
+                  size="lg"
+                  className="mt-5 h-11 w-full rounded-full shadow-sm shadow-primary/15"
                   disabled={busy || items.length === 0 || !selectedId}
                   onClick={placeOrder}
                 >

@@ -1,12 +1,11 @@
 "use client"
 
-// Quản trị sản phẩm: liệt kê + tạo/sửa/xóa (trường cơ bản + giá/tồn của option mặc định).
-// ⚠️ Trình chỉnh thuộc tính/biến thể (SKU) qua POST /api/products/{id}/attribute là phần phức tạp,
-// để làm sau (ghi chú). Tạo/sửa ở đây quản lý option mặc định (giá + tồn) như backend create/update.
-// Admin products: list + create/edit/delete (basic fields + default option price/stock).
+// Quản trị sản phẩm phổ thông và khai báo thuộc tính độc lập với ngành hàng.
+// Admin for generic products and category-neutral attributes.
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
+import { ProductVariantEditor } from "@/components/admin/product-variant-editor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -35,6 +34,22 @@ const emptyForm: ProductPayload = {
   stock: 0,
 }
 
+function parseAttributes(text: string): Record<string, string[]> | undefined {
+  const result: Record<string, string[]> = {}
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    const separator = trimmed.indexOf(":")
+    if (separator <= 0) throw new Error("Mỗi dòng thuộc tính cần theo dạng Tên: Giá trị 1, Giá trị 2")
+    const name = trimmed.slice(0, separator).trim()
+    const values = trimmed.slice(separator + 1).split(",").map((value) => value.trim()).filter(Boolean)
+    if (!name || values.length === 0) throw new Error(`Thuộc tính “${name || "?"}” cần có ít nhất một giá trị`)
+    if (result[name]) throw new Error(`Tên thuộc tính “${name}” đang bị lặp`)
+    result[name] = [...new Set(values)]
+  }
+  return Object.keys(result).length ? result : undefined
+}
+
 export default function AdminProductsPage() {
   const { authFetch } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
@@ -43,8 +58,11 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true)
 
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [variantProduct, setVariantProduct] = useState<Product | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<ProductPayload>(emptyForm)
+  const [attributeText, setAttributeText] = useState("")
+  const [hasVariantAttributes, setHasVariantAttributes] = useState(false)
   const [busy, setBusy] = useState(false)
 
   // Dùng /managed: chỉ sản phẩm thuộc mảng category nhân viên phụ trách (superadmin thấy tất cả).
@@ -68,12 +86,16 @@ export default function AdminProductsPage() {
   }, [load])
 
   const openCreate = () => {
+    setVariantProduct(null)
     setEditingId(null)
     setForm(emptyForm)
+    setAttributeText("")
+    setHasVariantAttributes(false)
     setShowForm(true)
   }
 
   const openEdit = (p: Product) => {
+    setVariantProduct(null)
     setEditingId(p.id)
     setForm({
       name: p.name,
@@ -84,18 +106,32 @@ export default function AdminProductsPage() {
       price: p.price,
       stock: p.stock,
     })
+    setHasVariantAttributes(Object.keys(p.attribute ?? {}).length > 0)
+    setAttributeText(
+      Object.entries(p.attribute ?? {})
+        .map(([name, values]) => `${name}: ${values.join(", ")}`)
+        .join("\n")
+    )
     setShowForm(true)
   }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    let attribute: Record<string, string[]> | undefined
+    try {
+      attribute = parseAttributes(attributeText)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Thuộc tính không hợp lệ")
+      return
+    }
+    const payload: ProductPayload = { ...form, ...(attribute ? { attribute } : {}) }
     setBusy(true)
     try {
       if (editingId) {
-        await updateProduct(authFetch, editingId, form)
+        await updateProduct(authFetch, editingId, payload)
         toast.success("Đã cập nhật sản phẩm")
       } else {
-        await createProduct(authFetch, form)
+        await createProduct(authFetch, payload)
         toast.success("Đã tạo sản phẩm")
       }
       setShowForm(false)
@@ -119,7 +155,7 @@ export default function AdminProductsPage() {
   }
 
   const totalPages = Math.max(1, Math.ceil(total / LIMIT))
-  const setField = (k: keyof ProductPayload, v: string | number | null) =>
+  const setField = (k: Exclude<keyof ProductPayload, "attribute">, v: string | number | null) =>
     setForm((prev) => ({ ...prev, [k]: v }))
 
   return (
@@ -128,6 +164,15 @@ export default function AdminProductsPage() {
         <h1 className="text-2xl font-semibold">Sản phẩm ({total})</h1>
         <Button onClick={openCreate}>Thêm sản phẩm</Button>
       </div>
+
+      {variantProduct ? (
+        <ProductVariantEditor
+          productId={variantProduct.id}
+          productName={variantProduct.name}
+          onClose={() => setVariantProduct(null)}
+          onSaved={load}
+        />
+      ) : null}
 
       {showForm ? (
         <form
@@ -152,26 +197,34 @@ export default function AdminProductsPage() {
               required
             />
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="price">Giá</Label>
-            <Input
-              id="price"
-              type="number"
-              value={form.price ?? ""}
-              onChange={(e) =>
-                setField("price", e.target.value === "" ? null : Number(e.target.value))
-              }
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="stock">Tồn kho</Label>
-            <Input
-              id="stock"
-              type="number"
-              value={form.stock ?? 0}
-              onChange={(e) => setField("stock", Number(e.target.value))}
-            />
-          </div>
+          {editingId && hasVariantAttributes ? (
+            <p className="text-sm text-muted-foreground sm:col-span-2">
+              Giá và tồn kho được quản lý theo từng SKU trong bảng Biến thể.
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-1.5">
+                <Label htmlFor="price">Giá</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  value={form.price ?? ""}
+                  onChange={(e) =>
+                    setField("price", e.target.value === "" ? null : Number(e.target.value))
+                  }
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="stock">Tồn kho</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  value={form.stock ?? 0}
+                  onChange={(e) => setField("stock", Number(e.target.value))}
+                />
+              </div>
+            </>
+          )}
           <div className="grid gap-1.5">
             <Label htmlFor="cat">Mã danh mục</Label>
             <Input
@@ -200,6 +253,22 @@ export default function AdminProductsPage() {
               onChange={(e) => setField("description", e.target.value)}
             />
           </div>
+          <div className="grid gap-1.5 sm:col-span-2">
+            <Label htmlFor="attributes">Thuộc tính sản phẩm</Label>
+            <Textarea
+              id="attributes"
+              value={attributeText}
+              onChange={(event) => {
+                setAttributeText(event.target.value)
+                if (event.target.value.trim()) setHasVariantAttributes(true)
+              }}
+              placeholder={"Kích cỡ: Nhỏ, Vừa, Lớn\nMàu sắc: Đen, Trắng"}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              Mỗi dòng khai báo một thuộc tính. Thuộc tính và giá trị cũ được giữ để bảo toàn SKU/đơn; thêm dòng/giá trị mới thay vì đổi tên hoặc xóa.
+            </p>
+          </div>
           <div className="flex gap-2 sm:col-span-2">
             <Button type="submit" disabled={busy}>
               {editingId ? "Cập nhật" : "Tạo"}
@@ -208,9 +277,6 @@ export default function AdminProductsPage() {
               Hủy
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground sm:col-span-2">
-            Lưu ý: chỉnh thuộc tính/biến thể (size, màu...) và nhiều SKU sẽ bổ sung sau.
-          </p>
         </form>
       ) : null}
 
@@ -239,6 +305,9 @@ export default function AdminProductsPage() {
                     <div className="flex gap-2">
                       <Button size="xs" variant="outline" onClick={() => openEdit(p)}>
                         Sửa
+                      </Button>
+                      <Button size="xs" variant="outline" onClick={() => { setShowForm(false); setVariantProduct(p) }}>
+                        Biến thể
                       </Button>
                       <Button size="xs" variant="destructive" onClick={() => remove(p)}>
                         Xóa

@@ -1,5 +1,6 @@
+import type { CSSProperties } from "react"
 import type { Metadata } from "next"
-import { Be_Vietnam_Pro, Geist_Mono } from "next/font/google"
+import { Geist_Mono } from "next/font/google"
 
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -7,59 +8,86 @@ import { ConditionalShell } from "@/components/site/conditional-shell"
 import { AuthProvider } from "@/lib/auth-context"
 import { CartProvider } from "@/lib/cart-context"
 import { SITE_URL } from "@/lib/config"
-import { siteConfig } from "@/lib/site-config"
+import { getShopSettingsForStore } from "@/lib/server-api"
+import { shopFontClasses, shopFontVariables } from "./fonts"
 import "./globals.css"
-
-// Font hỗ trợ tiếng Việt đầy đủ (subset vietnamese).
-// Font with full Vietnamese support.
-const fontSans = Be_Vietnam_Pro({
-  variable: "--font-sans",
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
-})
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 })
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: `${siteConfig.name} - ${siteConfig.tagline}`,
-    template: `%s | ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  openGraph: {
-    type: "website",
-    locale: "vi_VN",
-    siteName: siteConfig.name,
-  },
+function validColor(value: string | null | undefined): value is string {
+  return Boolean(value && /^#[0-9a-fA-F]{6}$/.test(value))
 }
 
-export default function RootLayout({
+function foregroundForColor(hex: string): string {
+  const channels = hex.slice(1).match(/.{2}/g)?.map((part) => parseInt(part, 16) / 255)
+  if (!channels || channels.length !== 3) return "#ffffff"
+  const [red, green, blue] = channels.map((channel) =>
+    channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  )
+  const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+  return luminance > 0.179 ? "#111827" : "#ffffff"
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getShopSettingsForStore()
+  const title = settings.tagline
+    ? `${settings.shopName} - ${settings.tagline}`
+    : settings.shopName
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: title, template: `%s | ${settings.shopName}` },
+    description: settings.description ?? undefined,
+    openGraph: {
+      type: "website",
+      locale: "vi_VN",
+      siteName: settings.shopName,
+      title,
+      description: settings.description ?? undefined,
+    },
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const settings = await getShopSettingsForStore()
+  const primary = validColor(settings.theme?.primaryColor)
+    ? settings.theme.primaryColor
+    : "#2563EB"
+  const fontFamily =
+    shopFontVariables[settings.theme?.font ?? ""] ?? shopFontVariables["be-vietnam-pro"]
+  const themeStyle = {
+    "--primary": primary,
+    "--primary-foreground": foregroundForColor(primary),
+    "--ring": primary,
+    "--font-sans": fontFamily,
+  } as unknown as CSSProperties
+
   return (
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${fontSans.variable} ${geistMono.variable} h-full antialiased`}
+      style={themeStyle}
+      className={`${shopFontClasses} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <noscript>
+          <style>{"[data-reveal]{opacity:1!important;transform:none!important}"}</style>
+        </noscript>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
           <AuthProvider>
             <CartProvider>
-              {/* Khung đổi theo route: /admin có shell quản trị riêng, còn lại là storefront. */}
-              {/* Shell varies by route: /admin has its own admin shell; others use the storefront. */}
-              <ConditionalShell>{children}</ConditionalShell>
+              <ConditionalShell settings={settings}>{children}</ConditionalShell>
             </CartProvider>
           </AuthProvider>
           <Toaster richColors position="top-center" />

@@ -3,7 +3,15 @@
 // hoặc route handler. KHÔNG import vào Client Component (dùng biến server-only INTERNAL_API_URL).
 // Server-side API for PUBLIC data (SSR for SEO). Import ONLY from Server Components.
 import { ApiError } from "./api-error"
-import type { Category, CountResponse, Product } from "./types"
+import type {
+  Category,
+  CountResponse,
+  Product,
+  ShopPolicyPage,
+  ShopSettingOptions,
+  ShopSettings,
+} from "./types"
+import { DEFAULT_SHOP_SETTINGS } from "./site-config"
 
 // URL backend cho phía server (server-only - không có tiền tố NEXT_PUBLIC).
 // Server-only backend URL.
@@ -77,6 +85,26 @@ export const getProductsByCategory = (categoryId: number | string) =>
 
 // ── Categories (công khai) ───────────────────────────────────────────────────
 export const getCategories = () => serverFetch<Category[]>("/api/categories")
+
+export const getShopSettings = () =>
+  serverFetch<ShopSettings>("/api/shop-settings", { noStore: true })
+
+export const getShopSettingOptions = () =>
+  serverFetch<ShopSettingOptions>("/api/shop-settings/options", { revalidate: 3600 })
+
+export async function getShopSettingsForStore(): Promise<ShopSettings> {
+  try {
+    return await getShopSettings()
+  } catch (error) {
+    console.error("Không tải được cấu hình cửa hàng từ backend.", error)
+    return DEFAULT_SHOP_SETTINGS
+  }
+}
+
+export const getPublishedShopPolicy = (slug: string) =>
+  serverFetchOrNull<ShopPolicyPage>(
+    "/api/shop-settings/policies/" + encodeURIComponent(slug)
+  )
 
 export const getCategory = (id: number | string) =>
   serverFetchOrNull<Category>(`/api/categories/${id}`)
